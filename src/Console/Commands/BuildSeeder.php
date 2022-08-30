@@ -26,9 +26,15 @@ class BuildSeeder extends Command
      *
      * @return int
      */
-    public function handle()
+    public function handle(): void
     {
         DatabaseBuilder::init();
-        DatabaseBuilder::buildSeeder();
+
+        $tables = DatabaseBuilder::$tables;
+
+        foreach ($tables as $tableName => $tableInfo){
+            DatabaseBuilder::buildSeeder($tableName);
+            $this->info("Build {$tableName}");
+        }
     }
 }

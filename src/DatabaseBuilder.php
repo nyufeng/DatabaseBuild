@@ -4,7 +4,6 @@ namespace Nyufeng\MakeDatabase;
 use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
-use Illuminate\Support\Facades\Storage;
 
 class DatabaseBuilder{
 
@@ -36,27 +35,26 @@ class DatabaseBuilder{
         }
     }
 
-    public static function buildSeeder(): void
+    public static function buildSeeder(string $tableName): void
     {
-        foreach (self::$tables as $tableName => $tableInfo){
-            $model = DB::table($tableName);
-            $data = $model->get();
-            $seederStr = "";
-            foreach($data as $row){
-                $seederStr .= "\t[\r\n";
-                foreach ($row as $k => $v){
-                    if ($v === null) {
-                        $seederStr .= "\t\t\"{$k}\" => null,\r\n";
-                    }else {
-                        $seederStr .= "\t\t\"{$k}\" => '{$v}',\r\n";
-                    }
+        $model = DB::table($tableName);
+        $data = $model->get();
+        $seederStr = "";
+        foreach($data as $row){
+            $seederStr .= "\t[\r\n";
+            foreach ($row as $k => $v){
+                if ($v === null) {
+                    $seederStr .= "\t\t\"{$k}\" => null,\r\n";
+                }else {
+                    $value = str_replace("'","\\'", $v);
+                    $seederStr .= "\t\t\"{$k}\" => '{$value}',\r\n";
                 }
-                $seederStr .= "\t],\r\n";
             }
-            $seederBuildName = "DatabaseSeeder" . ucfirst($tableName);
-            $seederTmp = file_get_contents(__DIR__ . "\\template\\DatabaseSeeder.tmp");
-            $seederBuildStr = str_replace(["{{ class }}", "{{ tableName }}", "{{ seederData }}"], [$seederBuildName, $tableName, $seederStr], $seederTmp);
-            File::put(App::databasePath() ."\\seeders\\$seederBuildName.php",$seederBuildStr);
+            $seederStr .= "\t],\r\n";
         }
+        $seederBuildName = "DatabaseSeeder" . ucfirst($tableName);
+        $seederTmp = file_get_contents(__DIR__ . "\\template\\DatabaseSeeder.tmp");
+        $seederBuildStr = str_replace(["{{ class }}", "{{ tableName }}", "{{ seederData }}"], [$seederBuildName, $tableName, $seederStr], $seederTmp);
+        File::put(App::databasePath() ."\\seeders\\$seederBuildName.php",$seederBuildStr);
     }
 }
