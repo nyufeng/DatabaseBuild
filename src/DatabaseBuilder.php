@@ -11,17 +11,19 @@ class DatabaseBuilder{
     public static string $db_name;
     public static array $tables;
 
-    public static function init(): void
+    public static function init(?string $tables): void
     {
         $db_conn_type = config("database.default");
         $db_name = config("database.connections.{$db_conn_type}.database");
-
         self::$db_conn_type = $db_conn_type;
         self::$db_name = $db_name;
-
-        $tableNames = DB::select("SHOW TABLES FROM `{$db_name}`");
+        if($tables == null){
+            $tableNames = DB::select("SHOW TABLES FROM `{$db_name}`");
+        }else{
+            $tableNames = explode(",", $tables);
+        }
         foreach ($tableNames as $tableNameClass){
-            $tableName = current($tableNameClass);
+            $tableName = is_string($tableNameClass)?$tableNameClass:current($tableNameClass);
             self::$tables[$tableName] = [];
             //COLUMNS
             $columns = DB::select("SELECT * FROM `information_schema`.`COLUMNS` WHERE TABLE_SCHEMA='{$db_name}' AND TABLE_NAME='{$tableName}' ORDER BY ORDINAL_POSITION");
