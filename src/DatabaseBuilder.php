@@ -1,7 +1,9 @@
 <?php
 namespace Nyufeng\MakeDatabase;
 
+use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Storage;
 
 class DatabaseBuilder{
@@ -38,20 +40,23 @@ class DatabaseBuilder{
     {
         foreach (self::$tables as $tableName => $tableInfo){
             $model = DB::table($tableName);
-            if($model->count() == 0) continue;
             $data = $model->get();
             $seederStr = "";
             foreach($data as $row){
                 $seederStr .= "\t[\r\n";
                 foreach ($row as $k => $v){
-                    $seederStr .= "\t\t\"{$k}\" => \"{$v}\",\r\n";
+                    if ($v === null) {
+                        $seederStr .= "\t\t\"{$k}\" => null,\r\n";
+                    }else {
+                        $seederStr .= "\t\t\"{$k}\" => '{$v}',\r\n";
+                    }
                 }
                 $seederStr .= "\t],\r\n";
             }
             $seederBuildName = "DatabaseSeeder" . ucfirst($tableName);
             $seederTmp = file_get_contents(__DIR__ . "\\template\\DatabaseSeeder.tmp");
             $seederBuildStr = str_replace(["{{ class }}", "{{ tableName }}", "{{ seederData }}"], [$seederBuildName, $tableName, $seederStr], $seederTmp);
-            Storage::put("DatabaseSeederBuild\\$seederBuildName.php",$seederBuildStr);
+            File::put(App::databasePath() ."\\seeders\\$seederBuildName.php",$seederBuildStr);
         }
     }
 }
